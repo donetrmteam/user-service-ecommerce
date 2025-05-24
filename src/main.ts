@@ -6,7 +6,6 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 async function bootstrap() {
-  // Crear aplicación como microservicio directamente
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
     transport: Transport.TCP,
     options: {
@@ -18,7 +17,6 @@ async function bootstrap() {
     logger: ['error', 'warn', 'debug', 'log', 'verbose'],
   });
   
-  // Validación de datos de entrada
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
