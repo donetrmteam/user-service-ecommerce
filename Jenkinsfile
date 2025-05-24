@@ -8,11 +8,11 @@ pipeline {
     environment {
         EC2_SERVER = '54.235.214.15'  //Cambia la ip de la instancia EC2
         DEPLOY_USER = 'ubuntu'
-        APP_DIR = '/home/ubuntu/user-service' //Cambia el directorio de la aplicación SEGUN EL NOMBRE DEL REPOSITORIO	
-        APP_REPO_URL = 'https://github.com/donetrmm/user-service-ecommerce.git' //Cambia el url del repositorio SEGUN EL NOMBRE DEL REPOSITORIO
-        PORT_DEV = '3001' //Cambia el puerto de la aplicación SEGUN EL NOMBRE DEL REPOSITORIO
-        PORT_QA = '3002' //Cambia el puerto de la aplicación SEGUN EL NOMBRE DEL REPOSITORIO
-        PORT_MAIN = '3003' //Cambia el puerto de la aplicación SEGUN EL NOMBRE DEL REPOSITORIO
+        APP_DIR = '/home/ubuntu/user-service-ecommerce' //Cambia el directorio de la aplicación SEGUN EL NOMBRE DEL REPOSITORIO	
+        APP_REPO_URL = 'https://github.com/donetrmteam/user-service-ecommerce.git' //Cambia el url del repositorio SEGUN EL NOMBRE DEL REPOSITORIO
+        PORT_DEV = '3001' 
+        PORT_QA = '3002' 
+        PORT_MAIN = '3003' 
     }
 
     stages {
