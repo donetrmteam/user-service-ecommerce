@@ -6,22 +6,20 @@ pipeline {
     }
 
     environment {
-        // Configurar variables de entorno para cada rama
-        SERVER_DEV = 'IP'
-        SERVER_QA = 'IP'
-        SERVER_PROD = '54.235.214.15'
+        EC2_SERVER = '54.235.214.15'
         DEPLOY_USER = 'ubuntu'
-        APP_DIR = '/home/ubuntu/api-gateway'
-        APP_REPO_URL = 'https://github.com/donetrmm/api-gateway.git'
+        APP_DIR = '/home/ubuntu/user-service-ecommerce'
+        APP_REPO_URL = 'https://github.com/donetrmm/user-service-ecommerce.git'
+        PORT_DEV = '3000'
+        PORT_QA = '3001'
+        PORT_MAIN = '3002'
     }
 
     stages {
         stage('Clone App Repo') {
             steps {
                 script {
-                    // Limpiar workspace por si hay restos
                     sh 'rm -rf app'
-                    // Clonar el repo de la app según la rama
                     sh "git clone -b ${env.BRANCH_NAME} ${env.APP_REPO_URL} app"
                 }
             }
@@ -46,16 +44,19 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    def targetServer = ''
+                    def deployPort = ''
+                    def serviceName = ''
                     def targetBranch = env.BRANCH_NAME
 
-                    // Determinar el servidor según la rama
                     if (targetBranch == 'dev') {
-                        targetServer = env.SERVER_DEV
+                        deployPort = env.PORT_DEV
+                        serviceName = 'user-service-dev'
                     } else if (targetBranch == 'qa') {
-                        targetServer = env.SERVER_QA
+                        deployPort = env.PORT_QA
+                        serviceName = 'user-service-qa'
                     } else if (targetBranch == 'main') {
-                        targetServer = env.SERVER_PROD
+                        deployPort = env.PORT_MAIN
+                        serviceName = 'user-service-prod'
                     } else {
                         echo "No se desplegará la rama: ${targetBranch}"
                         return
@@ -63,7 +64,7 @@ pipeline {
 
                     withCredentials([sshUserPrivateKey(credentialsId: 'server-ssh-key', keyFileVariable: 'SSH_KEY')]) {
                         sh """
-                            ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${DEPLOY_USER}@${targetServer} '
+                            ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${DEPLOY_USER}@${EC2_SERVER} '
                                 # Actualizar repositorios
                                 sudo apt update && sudo apt upgrade -y
 
@@ -96,13 +97,16 @@ pipeline {
                                     sudo apt install -y git
                                 fi
 
+                                # Crear directorio específico para la rama
+                                APP_BRANCH_DIR="${APP_DIR}-${targetBranch}"
+                                
                                 # Clonar o actualizar repositorio
-                                if [ ! -d ${APP_DIR} ]; then
+                                if [ ! -d \${APP_BRANCH_DIR} ]; then
                                     echo "Clonando repositorio..."
-                                    git clone -b ${targetBranch} ${env.APP_REPO_URL} ${APP_DIR}
+                                    git clone -b ${targetBranch} ${env.APP_REPO_URL} \${APP_BRANCH_DIR}
                                 else
                                     echo "Actualizando repositorio..."
-                                    cd ${APP_DIR}
+                                    cd \${APP_BRANCH_DIR}
                                     git fetch --all
                                     git checkout ${targetBranch}
                                     git pull origin ${targetBranch}
@@ -114,7 +118,7 @@ pipeline {
                                 nvm use --lts
 
                                 # Instalar dependencias
-                                cd ${APP_DIR}
+                                cd \${APP_BRANCH_DIR}
                                 npm ci
 
                                 # Compilar la aplicación NestJS
@@ -125,13 +129,16 @@ pipeline {
                                     echo "No hay script de build en package.json, omitiendo este paso"
                                 fi
 
+                                # Crear o actualizar archivo de configuración del entorno
+                                echo "TCP_PORT=${deployPort}" > .env
+
                                 # Reiniciar o iniciar con PM2
-                                if pm2 list | grep -q "nest-app"; then
+                                if pm2 list | grep -q "${serviceName}"; then
                                     echo "Reiniciando aplicación con PM2..."
-                                    pm2 restart nest-app
+                                    pm2 restart ${serviceName}
                                 else
                                     echo "Iniciando aplicación con PM2 por primera vez..."
-                                    pm2 start dist/main.js --name "nest-app"
+                                    pm2 start dist/main.js --name "${serviceName}" --env production
                                 fi
 
                                 # Guardar configuración de PM2
