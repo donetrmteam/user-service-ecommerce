@@ -9,7 +9,7 @@ pipeline {
         // Configurar variables de entorno para cada rama
         SERVER_DEV = 'IP'
         SERVER_QA = 'IP'
-        SERVER_PROD = '44.214.199.75'
+        SERVER_PROD = '54.235.214.15'
         DEPLOY_USER = 'ubuntu'
         APP_DIR = '/home/ubuntu/api-gateway'
         APP_REPO_URL = 'https://github.com/donetrmm/api-gateway.git'
