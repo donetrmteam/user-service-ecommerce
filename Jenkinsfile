@@ -92,6 +92,9 @@ pipeline {
                                 npm install -g pm2
                                 pm2 --version
 
+                                # Configurar PM2 para inicio automático
+                                pm2 startup | tail -n 1 | bash
+
                                 # Instalar Git si no está presente
                                 if ! command -v git &> /dev/null; then
                                     sudo apt install -y git
@@ -129,8 +132,18 @@ pipeline {
                                     echo "No hay script de build en package.json, omitiendo este paso"
                                 fi
 
-                                # Crear o actualizar archivo de configuración del entorno
-                                echo "TCP_PORT=${deployPort}" > .env
+                                # Manejar el archivo de configuración del entorno
+                                if [ -f .env ]; then
+                                    # Si el archivo existe, actualizar o agregar TCP_PORT
+                                    if grep -q "^TCP_PORT=" .env; then
+                                        sed -i "s/^TCP_PORT=.*$/TCP_PORT=${deployPort}/" .env
+                                    else
+                                        echo "TCP_PORT=${deployPort}" >> .env
+                                    fi
+                                else
+                                    # Si el archivo no existe, crearlo
+                                    echo "TCP_PORT=${deployPort}" > .env
+                                fi
 
                                 # Reiniciar o iniciar con PM2
                                 if pm2 list | grep -q "${serviceName}"; then
